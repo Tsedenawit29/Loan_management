@@ -1,4 +1,4 @@
-package com.Loan.Loan_Management.config;
+package com.Loan.Loan_Management.config.security;
 
 import com.Loan.Loan_Management.Security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;

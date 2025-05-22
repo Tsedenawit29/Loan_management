@@ -2,13 +2,13 @@ package com.Loan.Loan_Management.Security.Services;
 
 import com.Loan.Loan_Management.Entity.Users;
 import com.Loan.Loan_Management.Repository.UserRepository;
-import org.springframework.security.core.userdetails.User;
+import com.Loan.Loan_Management.config.security.CustomUserDetail; // <--- IMPORT YOUR NEW CustomUserDetails CLASS
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
+// You no longer need `java.util.stream.Collectors` here if CustomUserDetails handles mapping roles
 
 @Service
 public class CustomDetailService implements UserDetailsService {
@@ -24,12 +24,7 @@ public class CustomDetailService implements UserDetailsService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        return new User(
-                user.getUsername(),
-                user.getPasswordHash(),
-                user.getRoles().stream()
-                        .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
-                        .collect(Collectors.toSet())
-        );
+        // <--- NOW RETURN AN INSTANCE OF YOUR CustomUserDetails
+        return new CustomUserDetail(user);
     }
 }
