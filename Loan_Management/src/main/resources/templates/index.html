@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <title>Welcome</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="text-center">Welcome to the Loan Management System!</h1>
+    <p class="text-center">Please login or register to apply for loans or manage applications.</p>
+    <div class="text-center">
+        <a th:href="@{/login}" class="btn btn-primary me-2">Login</a>
+        <a th:href="@{/register}" class="btn btn-secondary">Register</a>
+    </div>
+</div>
+</body>
+</html>
