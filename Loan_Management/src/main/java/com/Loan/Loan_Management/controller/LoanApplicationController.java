@@ -4,7 +4,7 @@ import com.Loan.Loan_Management.Service.LoanApplicationService;
 import com.Loan.Loan_Management.dto.LoanApplicationRequest;
 import com.Loan.Loan_Management.dto.LoanApplicationResponse;
 import com.Loan.Loan_Management.dto.LoanDecisionRequest; // Make sure this is imported
-import com.Loan.Loan_Management.config.security.CustomUserDetail;
+import com.Loan.Loan_Management.config.security.CustomUserDetail; // Correct, likely plural
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,7 +29,7 @@ public class LoanApplicationController {
             @Valid @RequestBody LoanApplicationRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        Long userId = ((CustomUserDetail) userDetails).getId();
+        Long userId = ((CustomUserDetail) userDetails).getId(); // Update the type in the cast
         try {
             LoanApplicationResponse newApplication = loanApplicationService.applyForLoan(request, userId);
             return new ResponseEntity<>(newApplication, HttpStatus.CREATED);

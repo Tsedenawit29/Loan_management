@@ -1,7 +1,7 @@
 package com.Loan.Loan_Management.Service;
 
 import com.Loan.Loan_Management.Entity.LoanApplication;
-import com.Loan.Loan_Management.Entity.LoanStatus;
+import com.Loan.Loan_Management.Entity.LoanStatus; // Correct import for LoanStatus enum
 import com.Loan.Loan_Management.Entity.Users;
 import com.Loan.Loan_Management.Repository.LoanApplicationRepository;
 import com.Loan.Loan_Management.Repository.UserRepository;
@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class
-LoanApplicationService {
+public class LoanApplicationService {
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final UserRepository userRepository;
@@ -30,7 +29,61 @@ LoanApplicationService {
     @Value("${loan.interest-rate:0.12}") // Default annual interest rate (e.g., 12%)
     private BigDecimal annualInterestRate;
 
-    // ... (existing methods - applyForLoan, getLoanApplicationsByCustomer, etc. - no changes here)
+    // *** MISSING METHOD: applyForLoan ***
+    @Transactional
+    public LoanApplicationResponse applyForLoan(LoanApplicationRequest request, Long userId) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        LoanApplication loanApplication = LoanApplication.builder()
+                .user(user)
+                .loanAmount(request.getLoanAmount())
+                .loanType(request.getLoanType())
+                .durationMonths(request.getDurationMonths())
+                .purpose(request.getPurpose())
+                .annualIncome(request.getAnnualIncome())
+                .status(LoanStatus.PENDING) // Initial status
+                .applicationDate(LocalDateTime.now())
+                .build();
+
+        LoanApplication savedApplication = loanApplicationRepository.save(loanApplication);
+        return LoanApplicationResponse.fromEntity(savedApplication);
+    }
+
+    // *** MISSING METHOD: getLoanApplicationsByCustomer ***
+    @Transactional(readOnly = true)
+    public List<LoanApplicationResponse> getLoanApplicationsByCustomer(Long userId) {
+        List<LoanApplication> applications = loanApplicationRepository.findByUser_Id(userId);
+        return applications.stream()
+                .map(LoanApplicationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    // *** MISSING METHOD: getLoanApplicationByIdForCustomer ***
+    @Transactional(readOnly = true)
+    public LoanApplicationResponse getLoanApplicationByIdForCustomer(Long loanId, Long userId) {
+        LoanApplication loanApplication = loanApplicationRepository.findByIdAndUser_Id(loanId, userId)
+                .orElseThrow(() -> new RuntimeException("Loan application not found or does not belong to user."));
+        return LoanApplicationResponse.fromEntity(loanApplication);
+    }
+
+    // *** MISSING METHOD: getLoanApplicationById (used by officer for specific loan) ***
+    @Transactional(readOnly = true)
+    public LoanApplicationResponse getLoanApplicationById(Long loanId) {
+        return loanApplicationRepository.findById(loanId)
+                .map(LoanApplicationResponse::fromEntity)
+                .orElseThrow(() -> new RuntimeException("Loan application not found with ID: " + loanId));
+    }
+
+
+    // Existing method: getAllPendingApplications (ensure this is correct if it was there)
+    @Transactional(readOnly = true)
+    public List<LoanApplicationResponse> getAllPendingApplications() {
+        return loanApplicationRepository.findByStatus(LoanStatus.PENDING).stream()
+                .map(LoanApplicationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 
     // NEW: Approve Loan (Modified for flexible status)
     @Transactional
@@ -49,7 +102,7 @@ LoanApplicationService {
         loan.setApprovalDate(LocalDateTime.now()); // Set approval date
 
         // Calculate and set EMI, interest rate, start/end dates
-        calculateAndSetLoanDetails(loan); // <--- NEW helper method
+        calculateAndSetLoanDetails(loan);
 
         LoanApplication updatedLoan = loanApplicationRepository.save(loan);
         return LoanApplicationResponse.fromEntity(updatedLoan);
@@ -80,12 +133,11 @@ LoanApplicationService {
         return LoanApplicationResponse.fromEntity(updatedLoan);
     }
 
-    // Existing methods below...
-
-    // ... (getAllPendingApplications, getLoanApplicationById)
-
     // Helper method to map to response (ensure it handles new fields)
     private LoanApplicationResponse mapToResponse(LoanApplication loan) {
+        // This method is correctly defined below the existing methods.
+        // It's called by the other methods.
+        // I moved it here for clarity within the full service class.
         return LoanApplicationResponse.builder()
                 .id(loan.getId())
                 .userId(loan.getUser() != null ? loan.getUser().getId() : null)
@@ -97,11 +149,11 @@ LoanApplicationService {
                 .annualIncome(loan.getAnnualIncome())
                 .status(loan.getStatus())
                 .applicationDate(loan.getApplicationDate())
-                .approvalDate(loan.getApprovalDate()) // <--- Included
-                .monthlyEmi(loan.getMonthlyEmi())     // <--- Included
-                .interestRate(loan.getInterestRate()) // <--- Included
-                .loanStartDate(loan.getLoanStartDate()) // <--- Included
-                .loanEndDate(loan.getLoanEndDate())   // <--- Included
+                .approvalDate(loan.getApprovalDate())
+                .monthlyEmi(loan.getMonthlyEmi())
+                .interestRate(loan.getInterestRate())
+                .loanStartDate(loan.getLoanStartDate())
+                .loanEndDate(loan.getLoanEndDate())
                 .officerNotes(loan.getOfficerNotes())
                 .decisionDate(loan.getDecisionDate())
                 .build();
