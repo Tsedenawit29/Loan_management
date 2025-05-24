@@ -1,17 +1,17 @@
 package com.Loan.Loan_Management.controller;
 
 import com.Loan.Loan_Management.Service.LoanApplicationService;
-import com.Loan.Loan_Management.config.security.CustomUserDetail;
 import com.Loan.Loan_Management.dto.LoanApplicationRequest;
 import com.Loan.Loan_Management.dto.LoanApplicationResponse;
-import com.Loan.Loan_Management.Security.Services.CustomDetailService; // <--- NEW EXPLICIT IMPORT FOR YOUR CUSTOM USERDETAILS
+import com.Loan.Loan_Management.dto.LoanDecisionRequest; // Make sure this is imported
+import com.Loan.Loan_Management.config.security.CustomUserDetail;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails; // Still needed for the argument type
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +29,7 @@ public class LoanApplicationController {
             @Valid @RequestBody LoanApplicationRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // Cast UserDetails to your specific CustomUserDetails to access the ID
-        Long userId = ((CustomUserDetail) userDetails).getId(); // <--- Direct cast is now cleaner with import
-
+        Long userId = ((CustomUserDetail) userDetails).getId();
         try {
             LoanApplicationResponse newApplication = loanApplicationService.applyForLoan(request, userId);
             return new ResponseEntity<>(newApplication, HttpStatus.CREATED);
@@ -45,8 +43,7 @@ public class LoanApplicationController {
     public ResponseEntity<List<LoanApplicationResponse>> getMyLoanApplications(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        Long userId = ((com.Loan.Loan_Management.config.security.CustomUserDetail) userDetails).getId(); // <--- Direct cast
-
+        Long userId = ((CustomUserDetail) userDetails).getId();
         List<LoanApplicationResponse> applications = loanApplicationService.getLoanApplicationsByCustomer(userId);
         return new ResponseEntity<>(applications, HttpStatus.OK);
     }
@@ -57,8 +54,7 @@ public class LoanApplicationController {
             @PathVariable Long loanId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        Long userId = ((CustomUserDetail) userDetails).getId(); // <--- Direct cast
-
+        Long userId = ((CustomUserDetail) userDetails).getId();
         try {
             LoanApplicationResponse application = loanApplicationService.getLoanApplicationByIdForCustomer(loanId, userId);
             return new ResponseEntity<>(application, HttpStatus.OK);
@@ -80,6 +76,38 @@ public class LoanApplicationController {
         try {
             LoanApplicationResponse application = loanApplicationService.getLoanApplicationById(loanId);
             return new ResponseEntity<>(application, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("/{loanId}/approve")
+    @PreAuthorize("hasRole('LOAN_OFFICER')")
+    public ResponseEntity<LoanApplicationResponse> approveLoan(
+            @PathVariable Long loanId,
+            @Valid @RequestBody LoanDecisionRequest request
+    ) {
+        try {
+            LoanApplicationResponse updatedApplication = loanApplicationService.approveLoan(loanId, request);
+            return new ResponseEntity<>(updatedApplication, HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("/{loanId}/reject")
+    @PreAuthorize("hasRole('LOAN_OFFICER')")
+    public ResponseEntity<LoanApplicationResponse> rejectLoan(
+            @PathVariable Long loanId,
+            @Valid @RequestBody LoanDecisionRequest request
+    ) {
+        try {
+            LoanApplicationResponse updatedApplication = loanApplicationService.rejectLoan(loanId, request);
+            return new ResponseEntity<>(updatedApplication, HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
