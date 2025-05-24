@@ -1,7 +1,7 @@
 package com.Loan.Loan_Management.Repository;
 
 import com.Loan.Loan_Management.Entity.LoanApplication;
-import com.Loan.Loan_Management.Entity.LoanApplication.LoanStatus; // Import the enum
+import com.Loan.Loan_Management.Entity.LoanStatus; // <--- IMPORT THE NEWLY SEPARATED ENUM
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
