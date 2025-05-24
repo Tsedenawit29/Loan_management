@@ -1,115 +1,105 @@
 package com.Loan.Loan_Management.controller;
 
 import com.Loan.Loan_Management.Service.LoanApplicationService;
-import com.Loan.Loan_Management.dto.LoanApplicationRequest;
 import com.Loan.Loan_Management.dto.LoanApplicationResponse;
 import com.Loan.Loan_Management.dto.LoanDecisionRequest; // Make sure this is imported
-import com.Loan.Loan_Management.config.security.CustomUserDetail; // Correct, likely plural
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/loans")
+@Controller
+@RequestMapping("/officer/loans") // Path for loan officer related loan actions
+@PreAuthorize("hasRole('LOAN_OFFICER')") // Only Loan Officers can access this controller
 @RequiredArgsConstructor
 public class LoanApplicationController {
 
     private final LoanApplicationService loanApplicationService;
 
-    @PostMapping("/apply")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<LoanApplicationResponse> applyForLoan(
-            @Valid @RequestBody LoanApplicationRequest request,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        Long userId = ((CustomUserDetail) userDetails).getId(); // Update the type in the cast
-        try {
-            LoanApplicationResponse newApplication = loanApplicationService.applyForLoan(request, userId);
-            return new ResponseEntity<>(newApplication, HttpStatus.CREATED);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @GetMapping("/my-applications")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<List<LoanApplicationResponse>> getMyLoanApplications(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        Long userId = ((CustomUserDetail) userDetails).getId();
-        List<LoanApplicationResponse> applications = loanApplicationService.getLoanApplicationsByCustomer(userId);
-        return new ResponseEntity<>(applications, HttpStatus.OK);
-    }
-
-    @GetMapping("/my-applications/{loanId}")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<LoanApplicationResponse> getMyLoanApplicationById(
-            @PathVariable Long loanId,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        Long userId = ((CustomUserDetail) userDetails).getId();
-        try {
-            LoanApplicationResponse application = loanApplicationService.getLoanApplicationByIdForCustomer(loanId, userId);
-            return new ResponseEntity<>(application, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-        }
-    }
-
+    // Display all pending loan applications for review
     @GetMapping("/pending")
-    @PreAuthorize("hasRole('LOAN_OFFICER')")
-    public ResponseEntity<List<LoanApplicationResponse>> getAllPendingApplications() {
-        List<LoanApplicationResponse> applications = loanApplicationService.getAllPendingApplications();
-        return new ResponseEntity<>(applications, HttpStatus.OK);
+    public String listPendingApplications(Model model) {
+        List<LoanApplicationResponse> pendingLoans = loanApplicationService.getAllPendingApplications();
+        model.addAttribute("pendingLoans", pendingLoans);
+        return "officer/pending_loans"; // Thymeleaf template: src/main/resources/templates/officer/pending_loans.html
     }
 
-    @GetMapping("/{loanId}")
-    @PreAuthorize("hasRole('LOAN_OFFICER')")
-    public ResponseEntity<LoanApplicationResponse> getLoanApplicationDetails(@PathVariable Long loanId) {
+    // Display details of a specific loan application
+    @GetMapping("/{id}")
+    public String viewLoanDetails(@PathVariable("id") Long loanId, Model model) {
         try {
-            LoanApplicationResponse application = loanApplicationService.getLoanApplicationById(loanId);
-            return new ResponseEntity<>(application, HttpStatus.OK);
+            LoanApplicationResponse loan = loanApplicationService.getLoanApplicationById(loanId);
+            model.addAttribute("loan", loan);
+            model.addAttribute("loanDecisionRequest", new LoanDecisionRequest()); // Initialize for the decision form
+            return "officer/loan_details"; // Thymeleaf template: src/main/resources/templates/officer/loan_details.html
         } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            model.addAttribute("errorMessage", e.getMessage());
+            // It's better to redirect or show a proper error page
+            return "error/404"; // You might have a generic error page
         }
     }
 
-    @PostMapping("/{loanId}/approve")
-    @PreAuthorize("hasRole('LOAN_OFFICER')")
-    public ResponseEntity<LoanApplicationResponse> approveLoan(
-            @PathVariable Long loanId,
-            @Valid @RequestBody LoanDecisionRequest request
-    ) {
-        try {
-            LoanApplicationResponse updatedApplication = loanApplicationService.approveLoan(loanId, request);
-            return new ResponseEntity<>(updatedApplication, HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+    // Handle loan approval
+    @PostMapping("/{id}/approve")
+    public String approveLoan(@PathVariable("id") Long loanId,
+                              @Valid @ModelAttribute("loanDecisionRequest") LoanDecisionRequest request,
+                              BindingResult bindingResult,
+                              RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            // If validation fails (e.g., notes are empty), redirect back to loan details with an error
+            redirectAttributes.addFlashAttribute("errorMessage", "Approval notes cannot be empty.");
+            return "redirect:/officer/loans/" + loanId;
         }
+
+        try {
+            // Corrected call: Pass loanId first, then the request DTO
+            loanApplicationService.approveLoan(loanId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "Loan application ID " + loanId + " approved successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error approving loan ID " + loanId + ": " + e.getMessage());
+        }
+        return "redirect:/officer/loans/pending"; // Redirect to pending list after decision
     }
 
-    @PostMapping("/{loanId}/reject")
-    @PreAuthorize("hasRole('LOAN_OFFICER')")
-    public ResponseEntity<LoanApplicationResponse> rejectLoan(
-            @PathVariable Long loanId,
-            @Valid @RequestBody LoanDecisionRequest request
-    ) {
-        try {
-            LoanApplicationResponse updatedApplication = loanApplicationService.rejectLoan(loanId, request);
-            return new ResponseEntity<>(updatedApplication, HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+    // Handle loan rejection
+    @PostMapping("/{id}/reject")
+    public String rejectLoan(@PathVariable("id") Long loanId,
+                             @Valid @ModelAttribute("loanDecisionRequest") LoanDecisionRequest request,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Rejection notes cannot be empty.");
+            return "redirect:/officer/loans/" + loanId;
         }
+
+        try {
+            // Corrected call: Pass loanId first, then the request DTO
+            loanApplicationService.rejectLoan(loanId, request);
+            redirectAttributes.addFlashAttribute("successMessage", "Loan application ID " + loanId + " rejected successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error rejecting loan ID " + loanId + ": " + e.getMessage());
+        }
+        return "redirect:/officer/loans/pending";
+    }
+
+    // Optionally, a general list of all loans (approved, rejected, pending)
+    @GetMapping("/all")
+    public String listAllApplications(Model model) {
+        // You'll need a method in LoanApplicationService to get all loans
+        // List<LoanApplicationResponse> allLoans = loanApplicationService.getAllLoans();
+        // model.addAttribute("allLoans", allLoans);
+        return "officer/all_loans"; // Placeholder
     }
 }

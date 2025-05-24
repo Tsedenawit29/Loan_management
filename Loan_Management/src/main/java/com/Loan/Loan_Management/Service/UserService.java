@@ -11,15 +11,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional; // ADD THIS IMPORT
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // Lombok for constructor injection
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder; // Injected BCryptPasswordEncoder
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserResponse registerUser(UserRegistrationRequest request) {
@@ -31,18 +32,30 @@ public class UserService {
         }
 
         Users user = new Users();
-        // ID is auto-generated, no need to set here
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword())); // Hash the password!
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        Roles customerRole = roleRepository.findByRoleName("CUSTOMER")
-                .orElseThrow(() -> new RuntimeException("Error: Role 'CUSTOMER' not found. Please initialize roles."));
-        user.addRole(customerRole);
+        // Assign role based on request or default to CUSTOMER if not provided/validated
+        Roles assignedRole;
+        if ("LOAN_OFFICER".equalsIgnoreCase(request.getRole())) {
+            assignedRole = roleRepository.findByRoleName("LOAN_OFFICER")
+                    .orElseThrow(() -> new RuntimeException("Error: Role 'LOAN_OFFICER' not found. Please initialize roles."));
+        } else {
+            assignedRole = roleRepository.findByRoleName("CUSTOMER")
+                    .orElseThrow(() -> new RuntimeException("Error: Role 'CUSTOMER' not found. Please initialize roles."));
+        }
+        user.addRole(assignedRole);
 
         Users savedUser = userRepository.save(user);
 
         return new UserResponse(savedUser);
+    }
+
+    // NEW METHOD: Find user by username
+    @Transactional(readOnly = true)
+    public Optional<Users> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
     @Transactional(readOnly = true)

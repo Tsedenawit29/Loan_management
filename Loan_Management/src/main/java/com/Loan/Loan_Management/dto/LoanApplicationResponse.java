@@ -1,64 +1,57 @@
 package com.Loan.Loan_Management.dto;
 
 import com.Loan.Loan_Management.Entity.LoanApplication;
-import com.Loan.Loan_Management.Entity.LoanStatus; // <--- IMPORT THE NEWLY SEPARATED ENUM
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder; // <--- NEW IMPORT for @Builder
+import com.Loan.Loan_Management.Entity.LoanStatus;
+import lombok.Builder;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder // <--- NEW ANNOTATION
+@Data
+@Builder
 public class LoanApplicationResponse {
-
     private Long id;
     private Long userId;
     private String username;
-    private BigDecimal loanAmount;
+    private BigDecimal loanAmount; // Field name here matches DTO and entity
     private String loanType;
     private Integer durationMonths;
     private String purpose;
     private BigDecimal annualIncome;
-    private LoanStatus status; // <--- Now uses the external LoanStatus enum
+    private LoanStatus status;
     private LocalDateTime applicationDate;
     private LocalDateTime approvalDate;
     private BigDecimal monthlyEmi;
     private BigDecimal interestRate;
     private LocalDateTime loanStartDate;
     private LocalDateTime loanEndDate;
-    private String officerNotes; // <--- NEW FIELD
-    private LocalDateTime decisionDate; // <--- NEW FIELD
+    private String officerNotes;
+    private LocalDateTime decisionDate;
 
-    // Static factory method to convert LoanApplication entity to DTO
-    public static LoanApplicationResponse fromEntity(LoanApplication loanApplication) {
-        if (loanApplication == null) {
+    // Static method to convert LoanApplication entity to LoanApplicationResponse DTO
+    public static LoanApplicationResponse fromEntity(LoanApplication entity) {
+        if (entity == null) {
             return null;
         }
-        return LoanApplicationResponse.builder() // <--- Using builder now
-                .id(loanApplication.getId())
-                .userId(loanApplication.getUser() != null ? loanApplication.getUser().getId() : null)
-                .username(loanApplication.getUser() != null ? loanApplication.getUser().getUsername() : null)
-                .loanAmount(loanApplication.getLoanAmount())
-                .loanType(loanApplication.getLoanType())
-                .durationMonths(loanApplication.getDurationMonths())
-                .purpose(loanApplication.getPurpose())
-                .annualIncome(loanApplication.getAnnualIncome())
-                .status(loanApplication.getStatus())
-                .applicationDate(loanApplication.getApplicationDate())
-                .approvalDate(loanApplication.getApprovalDate())
-                .monthlyEmi(loanApplication.getMonthlyEmi())
-                .interestRate(loanApplication.getInterestRate())
-                .loanStartDate(loanApplication.getLoanStartDate())
-                .loanEndDate(loanApplication.getLoanEndDate())
-                .officerNotes(loanApplication.getOfficerNotes()) // <--- NEW FIELD
-                .decisionDate(loanApplication.getDecisionDate()) // <--- NEW FIELD
+        return LoanApplicationResponse.builder()
+                .id(entity.getId())
+                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
+                .username(entity.getUser() != null ? entity.getUser().getUsername() : null)
+                .loanAmount(entity.getLoanAmount()) // <--- CORRECTED: Using getLoanAmount()
+                .loanType(entity.getLoanType())
+                .durationMonths(entity.getDurationMonths())
+                .purpose(entity.getPurpose())
+                .annualIncome(entity.getAnnualIncome())
+                .status(entity.getStatus())
+                .applicationDate(entity.getApplicationDate())
+                .approvalDate(entity.getApprovalDate())
+                .monthlyEmi(entity.getMonthlyEmi())
+                .interestRate(entity.getInterestRate())
+                .loanStartDate(entity.getLoanStartDate())
+                .loanEndDate(entity.getLoanEndDate())
+                .officerNotes(entity.getOfficerNotes())
+                .decisionDate(entity.getDecisionDate())
                 .build();
     }
 }

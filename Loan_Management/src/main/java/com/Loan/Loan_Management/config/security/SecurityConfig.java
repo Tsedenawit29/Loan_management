@@ -5,9 +5,11 @@ import com.Loan.Loan_Management.Security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order; // Import @Order
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager; // <--- NEW IMPORT
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration; // <--- NEW IMPORT
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,13 +29,11 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomDetailService customUserDetailService;
 
-    // Password Encoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Authentication Provider Bean
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -42,47 +42,49 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // --- Security Filter Chain for REST APIs (JWT based) ---
-    // This chain will handle paths starting with /api/** and will be stateless.
+    // --- ADD THIS NEW BEAN METHOD ---
     @Bean
-    @Order(1) // Ensures this filter chain is processed first
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/**") // Apply this filter chain only to /api/** paths
-                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for API endpoints
+                .securityMatcher("/api/**")
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Allow auth endpoints
-                        .anyRequest().authenticated() // All other /api/** requests require authentication
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // JWT is stateless
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // --- Security Filter Chain for Web UI (Form Login based) ---
-    // This chain will handle all other paths (your Thymeleaf views) and will use sessions.
     @Bean
-    @Order(2) // Processed after the API chain
+    @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Consider enabling CSRF for production UI
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**").permitAll() // Allow access to public pages and static resources
-                        .anyRequest().authenticated() // All other pages require authentication
+                        .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .formLogin(form -> form // Configure form-based login
-                        .loginPage("/login") // Custom login page URL
-                        .defaultSuccessUrl("/default-dashboard", true) // Redirect after successful login (default dashboards)
-                        .permitAll() // Allow everyone to access the login page
-                )
-                .logout(logout -> logout // Configure logout
-                        .logoutUrl("/logout") // URL to trigger logout
-                        .logoutSuccessUrl("/login?logout") // Redirect after successful logout
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/default-dashboard", true)
                         .permitAll()
                 )
-                .authenticationProvider(authenticationProvider()); // Use the same authentication provider
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll()
+                )
+                .authenticationProvider(authenticationProvider());
 
         return http.build();
     }
