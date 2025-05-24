@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class LoanApplicationService {
+public class LoanApplicationService { // Removed 'abstract' keyword as we're providing all implementations
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final UserRepository userRepository;
@@ -40,16 +40,15 @@ public class LoanApplicationService {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        // Using Lombok's @Builder here for cleaner entity creation, given your LoanApplication has @Builder
         LoanApplication loanApplication = LoanApplication.builder()
                 .user(user)
-                .loanAmount(request.getLoanAmount()) // Field matches DTO and entity
+                .loanAmount(request.getLoanAmount())
                 .loanType(request.getLoanType())
                 .durationMonths(request.getDurationMonths())
                 .purpose(request.getPurpose())
                 .annualIncome(request.getAnnualIncome())
-                .status(LoanStatus.PENDING) // Initial status
-                .applicationDate(LocalDateTime.now()) // Set application date
+                .status(LoanStatus.PENDING)
+                .applicationDate(LocalDateTime.now())
                 .build();
 
         LoanApplication savedApplication = loanApplicationRepository.save(loanApplication);
@@ -63,22 +62,16 @@ public class LoanApplicationService {
      */
     @Transactional(readOnly = true)
     public List<LoanApplicationResponse> getLoansByCustomerId(Long userId) {
-        // Assuming findByUser_Id maps to LoanApplication.user.id
         List<LoanApplication> applications = loanApplicationRepository.findByUser_Id(userId);
         return applications.stream()
                 .map(LoanApplicationResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a single loan application by ID for a specific customer, ensuring ownership.
-     * @param loanId The ID of the loan application.
-     * @param userId The ID of the customer.
-     * @return LoanApplicationResponse DTO.
-     */
+    // This is the method we're implementing concretely
     @Transactional(readOnly = true)
-    public LoanApplicationResponse getLoanApplicationByIdForCustomer(Long loanId, Long userId) {
-        LoanApplication loanApplication = loanApplicationRepository.findByIdAndUser_Id(loanId, userId)
+    public LoanApplicationResponse getLoanApplicationByIdAndCustomerId(Long loanId, Long customerId) {
+        LoanApplication loanApplication = loanApplicationRepository.findByIdAndUser_Id(loanId, customerId)
                 .orElseThrow(() -> new RuntimeException("Loan application not found or does not belong to user."));
         return LoanApplicationResponse.fromEntity(loanApplication);
     }
@@ -126,7 +119,7 @@ public class LoanApplicationService {
         loan.setDecisionDate(LocalDateTime.now());
         loan.setApprovalDate(LocalDateTime.now());
 
-        calculateAndSetLoanDetails(loan); // Calculate EMI, dates etc.
+        calculateAndSetLoanDetails(loan);
 
         LoanApplication updatedLoan = loanApplicationRepository.save(loan);
         return LoanApplicationResponse.fromEntity(updatedLoan);
@@ -150,7 +143,6 @@ public class LoanApplicationService {
         loan.setStatus(LoanStatus.REJECTED);
         loan.setOfficerNotes(request.getNotes());
         loan.setDecisionDate(LocalDateTime.now());
-        // Reset approval-related fields on rejection
         loan.setApprovalDate(null);
         loan.setMonthlyEmi(null);
         loan.setInterestRate(null);
@@ -163,14 +155,12 @@ public class LoanApplicationService {
 
     // Helper method to calculate EMI, loan start/end dates, and set them on the LoanApplication entity
     private void calculateAndSetLoanDetails(LoanApplication loan) {
-        BigDecimal principal = loan.getLoanAmount(); // <--- CORRECTED: Using getLoanAmount()
+        BigDecimal principal = loan.getLoanAmount();
         BigDecimal annualRate = annualInterestRate;
         int durationMonths = loan.getDurationMonths();
 
-        // Monthly interest rate
         BigDecimal monthlyRate = annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
 
-        // EMI = P * R * (1 + R)^N / ((1 + R)^N - 1)
         BigDecimal ratePlusOneToPowerN = monthlyRate.add(BigDecimal.ONE).pow(durationMonths);
         BigDecimal numerator = principal.multiply(monthlyRate).multiply(ratePlusOneToPowerN);
         BigDecimal denominator = ratePlusOneToPowerN.subtract(BigDecimal.ONE);
@@ -179,11 +169,11 @@ public class LoanApplicationService {
             throw new ArithmeticException("Cannot calculate EMI: Denominator is zero.");
         }
 
-        BigDecimal monthlyEmi = numerator.divide(denominator, 2, RoundingMode.HALF_UP); // Round to 2 decimal places
+        BigDecimal monthlyEmi = numerator.divide(denominator, 2, RoundingMode.HALF_UP);
 
         loan.setMonthlyEmi(monthlyEmi);
-        loan.setInterestRate(annualRate); // Store annual rate for context
-        loan.setLoanStartDate(LocalDateTime.now()); // Loan starts now upon approval
+        loan.setInterestRate(annualRate);
+        loan.setLoanStartDate(LocalDateTime.now());
         loan.setLoanEndDate(loan.getLoanStartDate().plusMonths(durationMonths));
     }
 }

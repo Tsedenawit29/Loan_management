@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout/layout}"> <head>
+      layout:decorate="~{layout/layout}">
+<head>
     <title>Apply for Loan</title>
 </head>
 <body>
@@ -13,14 +14,14 @@
                     <h2>New Loan Application</h2>
                 </div>
                 <div class="card-body">
-                    <div th:if="${#fields.hasErrors('global')}" class="alert alert-danger" role="alert">
-                        <p th:each="err : ${#fields.errors('global')}" th:text="${err}"></p>
-                    </div>
-                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
-                        <span th:text="${errorMessage}"></span>
-                    </div>
-
                     <form th:action="@{/customer/apply}" method="post" th:object="${loanApplicationRequest}">
+                        <div th:if="${#fields.hasErrors('global')}" class="alert alert-danger" role="alert">
+                            <p th:each="err : ${#fields.errors('global')}" th:text="${err}"></p>
+                        </div>
+                        <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                            <span th:text="${errorMessage}"></span>
+                        </div>
+
                         <div class="mb-3">
                             <label for="loanAmount" class="form-label">Loan Amount</label>
                             <input type="number" id="loanAmount" name="loanAmount" th:field="*{loanAmount}" class="form-control" step="0.01" min="1000" required>
@@ -55,10 +56,9 @@
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Submit Application</button>
                         </div>
-                    </form>
-                    <div class="text-center mt-3">
-                        <a th:href="@{/customer/dashboard}" class="btn btn-secondary">Back to Dashboard</a>
-                    </div>
+                    </form> <div class="text-center mt-3">
+                    <a th:href="@{/customer/dashboard}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
                 </div>
             </div>
         </div>
