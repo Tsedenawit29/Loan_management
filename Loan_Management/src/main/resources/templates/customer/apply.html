@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}"> <head>
+    <title>Apply for Loan</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h2>New Loan Application</h2>
+                </div>
+                <div class="card-body">
+                    <div th:if="${#fields.hasErrors('global')}" class="alert alert-danger" role="alert">
+                        <p th:each="err : ${#fields.errors('global')}" th:text="${err}"></p>
+                    </div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+                        <span th:text="${errorMessage}"></span>
+                    </div>
+
+                    <form th:action="@{/customer/apply}" method="post" th:object="${loanApplicationRequest}">
+                        <div class="mb-3">
+                            <label for="loanAmount" class="form-label">Loan Amount</label>
+                            <input type="number" id="loanAmount" name="loanAmount" th:field="*{loanAmount}" class="form-control" step="0.01" min="1000" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('loanAmount')}" th:errors="*{loanAmount}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loanType" class="form-label">Loan Type</label>
+                            <select id="loanType" name="loanType" th:field="*{loanType}" class="form-select" required>
+                                <option value="">Select Loan Type</option>
+                                <option value="PERSONAL">Personal Loan</option>
+                                <option value="HOME">Home Loan</option>
+                                <option value="CAR">Car Loan</option>
+                                <option value="BUSINESS">Business Loan</option>
+                            </select>
+                            <div class="text-danger" th:if="${#fields.hasErrors('loanType')}" th:errors="*{loanType}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="durationMonths" class="form-label">Loan Duration (Months)</label>
+                            <input type="number" id="durationMonths" name="durationMonths" th:field="*{durationMonths}" class="form-control" min="6" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('durationMonths')}" th:errors="*{durationMonths}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Purpose</label>
+                            <textarea id="purpose" name="purpose" th:field="*{purpose}" class="form-control" rows="3" required></textarea>
+                            <div class="text-danger" th:if="${#fields.hasErrors('purpose')}" th:errors="*{purpose}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="annualIncome" class="form-label">Annual Income</label>
+                            <input type="number" id="annualIncome" name="annualIncome" th:field="*{annualIncome}" class="form-control" step="0.01" min="0" required>
+                            <div class="text-danger" th:if="${#fields.hasErrors('annualIncome')}" th:errors="*{annualIncome}"></div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Submit Application</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a th:href="@{/customer/dashboard}" class="btn btn-secondary">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
