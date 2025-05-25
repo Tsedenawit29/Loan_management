@@ -41,7 +41,6 @@ public class Users {
             inverseJoinColumns = @JoinColumn(name = "role_id") // Column in user_roles that refers to role
     )
     private Set<Roles> roles = new HashSet<>();
-    // Add methods to manage roles more easily
     public void addRole(Roles role) {
         this.roles.add(role);
     }

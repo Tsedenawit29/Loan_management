@@ -14,7 +14,7 @@ public class LoanApplicationResponse {
     private Long id;
     private Long userId;
     private String username;
-    private BigDecimal loanAmount; // Field name here matches DTO and entity
+    private BigDecimal loanAmount;
     private String loanType;
     private Integer durationMonths;
     private String purpose;

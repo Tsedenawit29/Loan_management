@@ -28,6 +28,6 @@ public class WebController {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_LOAN_OFFICER"))) {
             return "redirect:/officer/dashboard";
         }
-        return "redirect:/"; // Fallback
+        return "redirect:/";
     }
 }

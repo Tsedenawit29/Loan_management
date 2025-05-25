@@ -4,6 +4,138 @@
       layout:decorate="~{layout/layout}">
 <head>
     <title>Apply for Loan</title>
+    <style>
+        :root {
+            --primary-color: #00bcd4; /* Cyan */
+            --primary-dark: #0097a7;
+            --secondary-color: #ff9800; /* Orange */
+            --accent-color: #000000; /* Black */
+            --white: #ffffff;
+            --light-gray: #f8f9fa;
+            --danger-color: #dc3545;
+        }
+
+        .row.justify-content-center {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .col-md-8 {
+            flex: 0 0 66.666667%;
+            max-width: 66.666667%;
+            padding: 0 15px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: var(--white);
+        }
+
+        .card-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-radius: 10px 10px 0 0 !important;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            border-radius: 5px;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            width: 100%;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(0, 188, 212, 0.25);
+            outline: none;
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--white);
+            width: 100%;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+            border-color: var(--secondary-dark);
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .text-danger {
+            color: var(--danger-color);
+            font-size: 0.875rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+
+        .mt-3 {
+            margin-top: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .d-grid {
+            display: grid;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+    </style>
 </head>
 <body>
 <div layout:fragment="content">
@@ -14,7 +146,7 @@
                     <h2>New Loan Application</h2>
                 </div>
                 <div class="card-body">
-                    <form th:action="@{/customer/apply}" method="post" th:object="${loanApplicationRequest}">
+                    <form th:action="@{/customer/loans/apply}" method="post" th:object="${loanApplicationRequest}">
                         <div th:if="${#fields.hasErrors('global')}" class="alert alert-danger" role="alert">
                             <p th:each="err : ${#fields.errors('global')}" th:text="${err}"></p>
                         </div>
@@ -56,9 +188,10 @@
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Submit Application</button>
                         </div>
-                    </form> <div class="text-center mt-3">
-                    <a th:href="@{/customer/dashboard}" class="btn btn-secondary">Back to Dashboard</a>
-                </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a th:href="@{/customer/dashboard}" class="btn btn-secondary">Back to Dashboard</a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -8,8 +8,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-// You no longer need `java.util.stream.Collectors` here if CustomUserDetails handles mapping roles
-
 @Service
 public class CustomDetailService implements UserDetailsService {
 
@@ -24,7 +22,6 @@ public class CustomDetailService implements UserDetailsService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        // <--- NOW RETURN AN INSTANCE OF YOUR CustomUserDetails
         return new CustomUserDetail(user);
     }
 }

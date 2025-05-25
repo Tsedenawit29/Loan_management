@@ -1,18 +1,17 @@
 package com.Loan.Loan_Management;
 
 import com.Loan.Loan_Management.Entity.Roles;
-import com.Loan.Loan_Management.Entity.Users; // <--- NEW IMPORT
+import com.Loan.Loan_Management.Entity.Users;
 import com.Loan.Loan_Management.Repository.RoleRepository;
-import com.Loan.Loan_Management.Repository.UserRepository; // <--- NEW IMPORT
+import com.Loan.Loan_Management.Repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.password.PasswordEncoder; // <--- NEW IMPORT
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDateTime;
-import java.util.Collections; // <--- NEW IMPORT
-import java.util.HashSet;    // <--- NEW IMPORT
+import java.util.Collections;
+import java.util.HashSet;
 
 @SpringBootApplication
 public class LoanManagementApplication {
@@ -20,8 +19,6 @@ public class LoanManagementApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(LoanManagementApplication.class, args);
 	}
-
-	// Renamed the bean method to reflect its new purpose: initializing roles AND default users
 	@Bean
 	public CommandLineRunner initRolesAndDefaultUsers(
 			RoleRepository roleRepository,
@@ -64,9 +61,6 @@ public class LoanManagementApplication {
 				userRepository.save(officerUser);
 				System.out.println("Default LOAN_OFFICER user 'default_officer' initialized.");
 			}
-
-			// --- 3. (Optional) Initialize a Default CUSTOMER User ---
-			// This is useful for testing the customer journey without manual registration
 			if (userRepository.findByUsername("default_customer").isEmpty()) {
 				Users customerUser = new Users();
 				customerUser.setUsername("default_customer");

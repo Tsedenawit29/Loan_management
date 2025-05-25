@@ -34,5 +34,4 @@ public class GlobalExceptionHandler {
         System.err.println("An unexpected error occurred: " + ex.getMessage());
         return new ResponseEntity<>("An internal server error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    // Add more specific exception handlers as needed
 }

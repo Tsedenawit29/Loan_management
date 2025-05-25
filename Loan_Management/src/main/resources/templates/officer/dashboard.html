@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <title>Officer Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #00bcd4;
+            --primary-dark: #0097a7;
+            --secondary-color: #ff9800;
+            --secondary-dark: #e67e00;
+            --accent-color: #333;
+            --white: #fff;
+            --light-gray: #f8f9fa;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-gray);
+            padding: 2rem;
+            color: var(--accent-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background-color: var(--white);
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 6px 20px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            padding: 1.5rem;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--primary-dark);
+        }
+
+        .card-text {
+            margin-bottom: 1.25rem;
+        }
+
+        .btn {
+            font-weight: 600;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.03);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: var(--white);
+        }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+        }
+
+        .badge {
+            padding: 0.4em 0.7em;
+            font-size: 0.75em;
+            border-radius: 0.5rem;
+            font-weight: 700;
+        }
+
+        .bg-warning {
+            background-color: var(--warning-color);
+            color: #212529;
+        }
+
+        .bg-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .bg-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Welcome, Officer <span th:text="${username}">Officer</span></h1>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="alert">
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Pending Loans -->
+        <div class="card">
+            <h5 class="card-title">🕒 Pending Loans</h5>
+            <p class="card-text">Review and approve new applications.</p>
+            <a th:href="@{/officer/loans/pending}" class="btn btn-primary">View Pending</a>
+            <span th:if="${pendingLoansCount != null}" class="badge bg-warning" th:text="${pendingLoansCount}"></span>
+        </div>
+
+        <!-- Approved Loans -->
+        <div class="card">
+            <h5 class="card-title">✅ Approved Loans</h5>
+            <p class="card-text">Track all loans that are approved.</p>
+            <a th:href="@{/officer/loans/approved}" class="btn btn-info">View Approved</a>
+            <span th:if="${approvedLoansCount != null}" class="badge bg-success" th:text="${approvedLoansCount}"></span>
+        </div>
+
+        <!-- Rejected Loans -->
+        <div class="card">
+            <h5 class="card-title">❌ Rejected Loans</h5>
+            <p class="card-text">Manage declined applications.</p>
+            <a th:href="@{/officer/loans/rejected}" class="btn btn-danger">View Rejected</a>
+            <span th:if="${rejectedLoansCount != null}" class="badge bg-danger" th:text="${rejectedLoansCount}"></span>
+        </div>
+
+        <!-- All Loans -->
+        <div class="card">
+            <h5 class="card-title">📋 All Loans</h5>
+            <p class="card-text">Explore every loan application.</p>
+            <a th:href="@{/officer/loans/all}" class="btn btn-secondary">View All</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

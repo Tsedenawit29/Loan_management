@@ -2,14 +2,115 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
-    <title>Welcome</title>
+    <title>Loan Management System</title>
+    <style>
+        :root {
+            --primary-color: #00bcd4;
+            --primary-dark: #0097a7;
+            --secondary-color: #ff9800;
+            --accent-color: #000000;
+            --light-gray: #f8f9fa;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: url('https://www.shutterstock.com/image-photo/personal-loan-assessment-loans-concept-260nw-2603423077.jpg') no-repeat center center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 4rem 2rem;
+            border-radius: 12px;
+            max-width: 700px;
+            text-align: center;
+            width: 90%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        p {
+            font-size: 1.3rem;
+            color: var(--white);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            padding: 0.9rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            text-decoration: none;
+            display: inline-block;
+            margin: 0 0.7rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e68900; /* Slightly darker orange */
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            p {
+                font-size: 1.1rem;
+            }
+
+            .btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.95rem;
+                margin: 0.5rem 0.3rem;
+            }
+        }
+    </style>
 </head>
 <body>
-<div layout:fragment="content">
-    <h1 class="text-center">Welcome to the Loan Management System!</h1>
-    <p class="text-center">Please login or register to apply for loans or manage applications.</p>
-    <div class="text-center">
-        <a th:href="@{/login}" class="btn btn-primary me-2">Login</a>
+<div class="overlay" layout:fragment="content">
+    <h1>Welcome to the Loan Management System</h1>
+    <p>
+        Apply for loans, manage applications, and stay in control all in one place.
+    </p>
+    <div>
+        <a th:href="@{/login}" class="btn btn-primary">Login</a>
         <a th:href="@{/register}" class="btn btn-secondary">Register</a>
     </div>
 </div>

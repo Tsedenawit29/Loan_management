@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 @Data
 public class UserResponse {
-    private Long id; // Consistent with Long ID in entity
+    private Long id;
     private String username;
     private String email;
     private Set<String> roles;

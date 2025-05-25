@@ -1,11 +1,14 @@
 package com.Loan.Loan_Management.controller;
 
 import com.Loan.Loan_Management.Service.LoanApplicationService;
+import com.Loan.Loan_Management.Service.UserService;
+import com.Loan.Loan_Management.dto.LoanApplicationRequest;
 import com.Loan.Loan_Management.dto.LoanApplicationResponse;
-import com.Loan.Loan_Management.dto.LoanDecisionRequest; // Make sure this is imported
+import com.Loan.Loan_Management.Entity.Users;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,87 +22,74 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 @Controller
-@RequestMapping("/officer/loans") // Path for loan officer related loan actions
-@PreAuthorize("hasRole('LOAN_OFFICER')") // Only Loan Officers can access this controller
+@RequestMapping("/customer/loans")
+@PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 public class LoanApplicationController {
 
     private final LoanApplicationService loanApplicationService;
+    private final UserService userService;
 
-    // Display all pending loan applications for review
-    @GetMapping("/pending")
-    public String listPendingApplications(Model model) {
-        List<LoanApplicationResponse> pendingLoans = loanApplicationService.getAllPendingApplications();
-        model.addAttribute("pendingLoans", pendingLoans);
-        return "officer/pending_loans"; // Thymeleaf template: src/main/resources/templates/officer/pending_loans.html
+    // Display form for a new loan application
+    @GetMapping("/apply")
+    public String showLoanApplicationForm(Model model) {
+        model.addAttribute("loanApplicationRequest", new LoanApplicationRequest());
+        return "customer/apply_loan"; // Thymeleaf template for the application form
     }
+    @PostMapping("/apply")
+    public String submitLoanApplication(@Valid @ModelAttribute("loanApplicationRequest") LoanApplicationRequest request,
+                                        BindingResult bindingResult,
+                                        RedirectAttributes redirectAttributes,
+                                        Authentication authentication) {
+        if (bindingResult.hasErrors()) {
+            return "customer/apply_loan";
+        }
 
-    // Display details of a specific loan application
-    @GetMapping("/{id}")
-    public String viewLoanDetails(@PathVariable("id") Long loanId, Model model) {
         try {
-            LoanApplicationResponse loan = loanApplicationService.getLoanApplicationById(loanId);
-            model.addAttribute("loan", loan);
-            model.addAttribute("loanDecisionRequest", new LoanDecisionRequest()); // Initialize for the decision form
-            return "officer/loan_details"; // Thymeleaf template: src/main/resources/templates/officer/loan_details.html
+            String username = authentication.getName();
+            Users currentUser = userService.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user not found. Cannot submit loan."));
+
+            loanApplicationService.applyForLoan(currentUser.getId(), request);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Loan application submitted successfully!");
+            // FIX: Redirect to the customer dashboard instead of /my-loans
+            return "redirect:/customer/dashboard";
+        } catch (Exception e) {
+            bindingResult.reject(null, "Error submitting loan application: " + e.getMessage());
+            return "customer/apply_loan";
+        }
+    }
+    @GetMapping("/my-loans")
+    public String listCustomerLoans(Model model, Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            Users currentUser = userService.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user not found: " + username));
+
+            List<LoanApplicationResponse> customerLoans = loanApplicationService.getLoansByCustomerId(currentUser.getId());
+            model.addAttribute("customerLoans", customerLoans); // Note: Dashboard uses 'loans'
+            return "customer/my_loans"; // This template *must* exist if you keep this endpoint
         } catch (RuntimeException e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            // It's better to redirect or show a proper error page
-            return "error/404"; // You might have a generic error page
+            model.addAttribute("errorMessage", "Error fetching your loans: " + e.getMessage());
+            return "customer/my_loans";
         }
     }
 
-    // Handle loan approval
-    @PostMapping("/{id}/approve")
-    public String approveLoan(@PathVariable("id") Long loanId,
-                              @Valid @ModelAttribute("loanDecisionRequest") LoanDecisionRequest request,
-                              BindingResult bindingResult,
-                              RedirectAttributes redirectAttributes) {
-
-        if (bindingResult.hasErrors()) {
-            // If validation fails (e.g., notes are empty), redirect back to loan details with an error
-            redirectAttributes.addFlashAttribute("errorMessage", "Approval notes cannot be empty.");
-            return "redirect:/officer/loans/" + loanId;
-        }
-
+    // Display details of a specific loan application for the logged-in customer
+    @GetMapping("/{id}")
+    public String viewCustomerLoanDetails(@PathVariable("id") Long loanId, Model model, Authentication authentication) {
         try {
-            // Corrected call: Pass loanId first, then the request DTO
-            loanApplicationService.approveLoan(loanId, request);
-            redirectAttributes.addFlashAttribute("successMessage", "Loan application ID " + loanId + " approved successfully!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error approving loan ID " + loanId + ": " + e.getMessage());
+            String username = authentication.getName();
+            Users currentUser = userService.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user not found: " + username));
+
+            LoanApplicationResponse loan = loanApplicationService.getLoanApplicationByIdAndCustomerId(loanId, currentUser.getId());
+            model.addAttribute("loan", loan);
+            return "customer/loan_details";
+        } catch (RuntimeException e) {
+            model.addAttribute("errorMessage", "Loan not found or does not belong to your account.");
+            return "redirect:/customer/loans/my-loans"; // Redirect to customer's loan list (or dashboard if `/my-loans` removed)
         }
-        return "redirect:/officer/loans/pending"; // Redirect to pending list after decision
-    }
-
-    // Handle loan rejection
-    @PostMapping("/{id}/reject")
-    public String rejectLoan(@PathVariable("id") Long loanId,
-                             @Valid @ModelAttribute("loanDecisionRequest") LoanDecisionRequest request,
-                             BindingResult bindingResult,
-                             RedirectAttributes redirectAttributes) {
-
-        if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Rejection notes cannot be empty.");
-            return "redirect:/officer/loans/" + loanId;
-        }
-
-        try {
-            // Corrected call: Pass loanId first, then the request DTO
-            loanApplicationService.rejectLoan(loanId, request);
-            redirectAttributes.addFlashAttribute("successMessage", "Loan application ID " + loanId + " rejected successfully!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Error rejecting loan ID " + loanId + ": " + e.getMessage());
-        }
-        return "redirect:/officer/loans/pending";
-    }
-
-    // Optionally, a general list of all loans (approved, rejected, pending)
-    @GetMapping("/all")
-    public String listAllApplications(Model model) {
-        // You'll need a method in LoanApplicationService to get all loans
-        // List<LoanApplicationResponse> allLoans = loanApplicationService.getAllLoans();
-        // model.addAttribute("allLoans", allLoans);
-        return "officer/all_loans"; // Placeholder
     }
 }

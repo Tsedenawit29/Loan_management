@@ -21,20 +21,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class LoanApplicationService { // Removed 'abstract' keyword as we're providing all implementations
+public class LoanApplicationService {
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final UserRepository userRepository;
 
-    @Value("${loan.interest-rate:0.12}") // Default annual interest rate (e.g., 12%)
+    @Value("${loan.interest-rate:0.12}")
     private BigDecimal annualInterestRate;
 
-    /**
-     * Handles the submission of a new loan application by a user.
-     * @param userId The ID of the user submitting the application.
-     * @param request The DTO containing loan application details.
-     * @return LoanApplicationResponse of the created application.
-     */
     @Transactional
     public LoanApplicationResponse applyForLoan(Long userId, LoanApplicationRequest request) {
         Users user = userRepository.findById(userId)
@@ -55,11 +49,6 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         return LoanApplicationResponse.fromEntity(savedApplication);
     }
 
-    /**
-     * Retrieves all loan applications for a specific customer.
-     * @param userId The ID of the customer.
-     * @return A list of LoanApplicationResponse DTOs.
-     */
     @Transactional(readOnly = true)
     public List<LoanApplicationResponse> getLoansByCustomerId(Long userId) {
         List<LoanApplication> applications = loanApplicationRepository.findByUser_Id(userId);
@@ -68,19 +57,13 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
                 .collect(Collectors.toList());
     }
 
-    // This is the method we're implementing concretely
     @Transactional(readOnly = true)
-    public LoanApplicationResponse getLoanApplicationByIdAndCustomerId(Long loanId, Long customerId) {
-        LoanApplication loanApplication = loanApplicationRepository.findByIdAndUser_Id(loanId, customerId)
+    public LoanApplicationResponse getLoanApplicationByIdAndCustomerId(Long loanId, Long userId) {
+        LoanApplication loanApplication = loanApplicationRepository.findByIdAndUser_Id(loanId, userId)
                 .orElseThrow(() -> new RuntimeException("Loan application not found or does not belong to user."));
         return LoanApplicationResponse.fromEntity(loanApplication);
     }
 
-    /**
-     * Retrieves a single loan application by ID (typically for internal/officer use).
-     * @param loanId The ID of the loan application.
-     * @return LoanApplicationResponse DTO.
-     */
     @Transactional(readOnly = true)
     public LoanApplicationResponse getLoanApplicationById(Long loanId) {
         return loanApplicationRepository.findById(loanId)
@@ -88,10 +71,6 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
                 .orElseThrow(() -> new RuntimeException("Loan application not found with ID: " + loanId));
     }
 
-    /**
-     * Retrieves all pending loan applications (typically for loan officers).
-     * @return A list of LoanApplicationResponse DTOs.
-     */
     @Transactional(readOnly = true)
     public List<LoanApplicationResponse> getAllPendingApplications() {
         return loanApplicationRepository.findByStatus(LoanStatus.PENDING).stream()
@@ -99,12 +78,6 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Approves a loan application and calculates loan details.
-     * @param loanId The ID of the loan to approve.
-     * @param request Decision details including notes.
-     * @return LoanApplicationResponse of the updated loan.
-     */
     @Transactional
     public LoanApplicationResponse approveLoan(Long loanId, LoanDecisionRequest request) {
         LoanApplication loan = loanApplicationRepository.findById(loanId)
@@ -115,7 +88,7 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         }
 
         loan.setStatus(LoanStatus.APPROVED);
-        loan.setOfficerNotes(request.getNotes());
+        loan.setOfficerNotes(request.getOfficerNotes());
         loan.setDecisionDate(LocalDateTime.now());
         loan.setApprovalDate(LocalDateTime.now());
 
@@ -125,12 +98,6 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         return LoanApplicationResponse.fromEntity(updatedLoan);
     }
 
-    /**
-     * Rejects a loan application.
-     * @param loanId The ID of the loan to reject.
-     * @param request Decision details including notes.
-     * @return LoanApplicationResponse of the updated loan.
-     */
     @Transactional
     public LoanApplicationResponse rejectLoan(Long loanId, LoanDecisionRequest request) {
         LoanApplication loan = loanApplicationRepository.findById(loanId)
@@ -141,7 +108,7 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         }
 
         loan.setStatus(LoanStatus.REJECTED);
-        loan.setOfficerNotes(request.getNotes());
+        loan.setOfficerNotes(request.getOfficerNotes());
         loan.setDecisionDate(LocalDateTime.now());
         loan.setApprovalDate(null);
         loan.setMonthlyEmi(null);
@@ -153,7 +120,22 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         return LoanApplicationResponse.fromEntity(updatedLoan);
     }
 
-    // Helper method to calculate EMI, loan start/end dates, and set them on the LoanApplication entity
+    @Transactional(readOnly = true)
+    public List<LoanApplicationResponse> getLoansByStatus(LoanStatus status) {
+        List<LoanApplication> applications = loanApplicationRepository.findByStatus(status);
+        return applications.stream()
+                .map(LoanApplicationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<LoanApplicationResponse> getAllLoanApplications() {
+        List<LoanApplication> applications = loanApplicationRepository.findAll();
+        return applications.stream()
+                .map(LoanApplicationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     private void calculateAndSetLoanDetails(LoanApplication loan) {
         BigDecimal principal = loan.getLoanAmount();
         BigDecimal annualRate = annualInterestRate;
@@ -166,7 +148,7 @@ public class LoanApplicationService { // Removed 'abstract' keyword as we're pro
         BigDecimal denominator = ratePlusOneToPowerN.subtract(BigDecimal.ONE);
 
         if (denominator.compareTo(BigDecimal.ZERO) == 0) {
-            throw new ArithmeticException("Cannot calculate EMI: Denominator is zero.");
+            throw new ArithmeticException("Cannot calculate EMI: Denominator is zero (possibly due to zero duration).");
         }
 
         BigDecimal monthlyEmi = numerator.divide(denominator, 2, RoundingMode.HALF_UP);

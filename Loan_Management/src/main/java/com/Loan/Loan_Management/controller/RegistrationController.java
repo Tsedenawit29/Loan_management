@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class RegistrationController {
 
-    private final UserService userService; // <--- CHANGE THIS INJECTION from AuthService
+    private final UserService userService;
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -39,14 +39,13 @@ public class RegistrationController {
         }
 
         try {
-            // Call your UserService to register the user
-            userService.registerUser(request); // <--- Use userService.registerUser
+            userService.registerUser(request);
             redirectAttributes.addFlashAttribute("success", "Registration successful! Please login.");
             return "redirect:/login";
-        } catch (IllegalArgumentException e) { // Catch specific exceptions from UserService
+        } catch (IllegalArgumentException e) {
             model.addAttribute("error", e.getMessage());
             return "register";
-        } catch (RuntimeException e) { // Catch any other unexpected runtime exceptions
+        } catch (RuntimeException e) {
             model.addAttribute("error", "An unexpected error occurred during registration.");
             return "register";
         }

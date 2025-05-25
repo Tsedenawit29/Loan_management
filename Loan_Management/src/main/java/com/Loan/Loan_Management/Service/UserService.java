@@ -35,8 +35,6 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
-        // Assign role based on request or default to CUSTOMER if not provided/validated
         Roles assignedRole;
         if ("LOAN_OFFICER".equalsIgnoreCase(request.getRole())) {
             assignedRole = roleRepository.findByRoleName("LOAN_OFFICER")
@@ -51,8 +49,6 @@ public class UserService {
 
         return new UserResponse(savedUser);
     }
-
-    // NEW METHOD: Find user by username
     @Transactional(readOnly = true)
     public Optional<Users> findByUsername(String username) {
         return userRepository.findByUsername(username);

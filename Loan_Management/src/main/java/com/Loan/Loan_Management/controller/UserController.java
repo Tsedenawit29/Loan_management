@@ -17,8 +17,6 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-
-    // This endpoint is allowed to all, including unauthenticated users, as defined in SecurityConfig
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody UserRegistrationRequest request) {
         try {
@@ -30,18 +28,12 @@ public class UserController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-    // This endpoint now requires authentication and the LOAN_OFFICER role
     @GetMapping
     @PreAuthorize("hasRole('LOAN_OFFICER')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
-
-    // Example of allowing a user to retrieve their own data or a LOAN_OFFICER to retrieve any
-    // This requires the principal in authentication to have the ID of the user.
-    // For this, you might extend UserDetails in CustomUserDetailsService to include the entity ID.
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('LOAN_OFFICER', 'CUSTOMER') and (authentication.principal.username == @userService.getUserById(#id).getUsername() or hasRole('LOAN_OFFICER'))")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {

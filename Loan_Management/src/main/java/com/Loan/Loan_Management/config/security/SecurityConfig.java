@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AuthenticationManager; // <--- NEW IMPORT
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration; // <--- NEW IMPORT
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,7 +18,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+
 
 @Configuration
 @EnableWebSecurity
@@ -42,7 +50,6 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // --- ADD THIS NEW BEAN METHOD ---
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
@@ -71,12 +78,16 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Consider enabling CSRF for production UI
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/officer/**").hasRole("LOAN_OFFICER")   // Corrected to LOAN_OFFICER
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/default-dashboard", true)
+                        .loginProcessingUrl("/authenticate")
+                        .successHandler(authenticationSuccessHandler())
+                        .failureUrl("/login?error")
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -87,5 +98,32 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider());
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler() {
+        return new AuthenticationSuccessHandler() {
+            @Override
+            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                System.out.println("\n--- DEBUG: Login successful! ---");
+                System.out.println("Authenticated User: " + authentication.getName());
+                System.out.print("Authorities: ");
+                authentication.getAuthorities().forEach(a -> System.out.print(a.getAuthority() + " "));
+                System.out.println("\n---------------------------------\n");
+
+                if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER"))) {
+                    System.out.println("Redirecting customer to /customer/dashboard");
+                    response.sendRedirect("/customer/dashboard");
+                }
+                else if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_LOAN_OFFICER"))) { // Corrected to ROLE_LOAN_OFFICER
+                    System.out.println("Redirecting officer to /officer/dashboard");
+                    response.sendRedirect("/officer/dashboard");
+                }
+                else {
+                    System.out.println("No specific role found, redirecting to /login (or a default home)");
+                    response.sendRedirect("/login");
+                }
+            }
+        };
     }
 }
